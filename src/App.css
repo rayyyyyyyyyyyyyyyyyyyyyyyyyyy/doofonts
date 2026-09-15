@@ -1,14 +1,119 @@
-.App {
+.upload-page {
+  max-width: 800px; 
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-height: calc(100vh - 64px); /* เต็มจอ ลบความสูง header */
+  justify-content: center;        /* จัดกลางแนวตั้ง */
+}
+
+.results-page {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+}
+
+.upload-hero {
   text-align: center;
 }
 
-.App-header {
-  background-color: #e8e8e8;
-  min-height: 100vh;
+.upload-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.upload-subtitle {
+  color: var(--color-text-secondary);
+  font-size: 1.1rem;
+  margin: 0.5rem 0 0;
+}
+
+.sample-section {
+  text-align: center;
+}
+
+.sample-label {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.sample-images {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.sample-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: #525252;
+  gap: 0.6rem;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 12px;
+  padding: 0.6rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
 }
+
+.sample-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-color: var(--color-accent);
+}
+
+.sample-img-wrapper {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sample-img-wrapper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0,0,0,0) 60%, rgba(0,0,0,0.03) 100%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.sample-card:hover .sample-img-wrapper::after {
+  opacity: 1;
+}
+
+.sample-thumb {
+  max-width: 88px;
+  max-height: 88px;
+  object-fit: contain;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sample-card:hover .sample-thumb {
+  transform: scale(1.05);
+}
+
+.sample-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: color 0.2s ease;
+}
+
+.sample-card:hover .sample-name {
+  color: var(--color-text-primary);
+}
+
