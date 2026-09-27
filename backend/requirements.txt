@@ -5,3 +5,5 @@ torchvision
 timm
 pillow
 python-multipart
+easyocr
+numpy

@@ -1,4 +1,4 @@
-/* 1. กล่องหลักครอบทั้งหมด */
+﻿/* 1. กล่องหลักครอบทั้งหมด */
 .results-container {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -55,6 +55,7 @@
 
 /* ฝั่งซ้าย: กล่องรูปภาพ */
 .image-box {
+  position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
   background: #f4f4f6;
@@ -76,6 +77,56 @@
 /* ฝั่งขวา: แสดงข้อมูลฟอนต์ */
 .right-panel {
   min-height: 220px;
+}
+
+.ocr-bounding-box {
+  position: absolute;
+  border: 3px solid #e4ed3a;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
+  pointer-events: none;
+}
+
+.ocr-result {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.1rem;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  border-radius: 10px;
+}
+
+.ocr-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #6d28d9;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ocr-text-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #c4b5fd;
+  border-radius: 6px;
+  padding: 0.55rem 0.65rem;
+  background: #fff;
+  color: var(--color-text-primary);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.ocr-text-input:focus {
+  outline: 2px solid #a78bfa;
+  outline-offset: 1px;
+}
+
+.ocr-detail {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
 }
 
 .font-list {
@@ -152,13 +203,49 @@
   color: #16a34a;
 }
 
-/* ข้อความตัวอย่างขนาดใหญ่ */
+/* specimen text - editable inline (textarea) */
 .specimen-text {
   font-size: 56px;
   font-weight: 700;
   color: var(--color-text-primary);
   margin: 0.75rem 0 0;
   line-height: 1.2;
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 0.25em 0.5em 0;
+  cursor: text;
+  caret-color: var(--color-primary, #6366f1);
+  overflow: visible;
+  transition: padding-top 0.15s ease;
+}
+
+/* ระดับที่ 1: มีสระบน หรือ วรรณยุกต์เดี่ยว (เช่น กิน, บ้าน) */
+.specimen-text.has-upper-tone {
+  padding-top: 0.55em;
+}
+/* ระดับที่ 2: มีสระบน + วรรณยุกต์ซ้อน 2 ชั้น (เช่น พื้นฐาน) */
+.specimen-text.has-stacked-tone {
+  padding-top: 0.95em;
+}
+
+.specimen-text::placeholder {
+  color: #c4c4c4;
+}
+
+.specimen-text:focus {
+  background: rgba(99, 102, 241, 0.04);
+  border-radius: 6px;
+}
+
+/* OCR confidence badge */
+.ocr-confidence-hint {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin: 0 0 0.5rem;
+  letter-spacing: 0.02em;
 }
 
 /* สถานะกำลังโหลด */

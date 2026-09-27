@@ -14,8 +14,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, UploadFile, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from PIL import Image
+from PIL import Image, ImageEnhance
 import io
+import easyocr
+import numpy as np
+import torch
 
 from model_loader import ModelManager
 
@@ -32,12 +35,14 @@ STYLE_MAPPING_PATH = BASE_DIR.parent / "style_mapping.json"
 # Globals (initialised in lifespan)
 # ---------------------------------------------------------------------------
 model_manager: ModelManager | None = None
+ocr_reader_th: easyocr.Reader | None = None
+ocr_reader_en: easyocr.Reader | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load mappings and initialise ModelManager at startup."""
-    global model_manager
+    global model_manager, ocr_reader_th, ocr_reader_en
 
     print("=" * 50)
     print("  DooFonts API — Starting up")
@@ -67,6 +72,10 @@ async def lifespan(app: FastAPI):
         font_mapping=font_mapping,
         style_mapping=style_mapping,
     )
+
+    # Load once because EasyOCR initialisation downloads/loads its recognition models.
+    ocr_reader_th = easyocr.Reader(["th", "en"], gpu=torch.cuda.is_available())
+    ocr_reader_en = easyocr.Reader(["en"], gpu=torch.cuda.is_available())
 
     print(f"  Available models: {model_manager.available_models}")
     print("=" * 50)
@@ -150,6 +159,76 @@ async def predict(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Could not read image: {str(e)}")
 
+    # OCR is independent from font prediction. Keep only the longest detected
+    # text segment so the UI has one clear word to highlight and edit.
+    ocr_items = []
+    if ocr_reader_th is not None:
+        try:
+            # 1. ปรับขนาดภาพ & Contrast เพื่อให้อ่านสระไทยได้คมชัดขึ้น
+            img_rgb = image.convert("RGB")
+            scale_factor = 1.0
+            if img_rgb.height < 800:
+                scale_factor = 800 / img_rgb.height
+                new_size = (int(img_rgb.width * scale_factor), int(img_rgb.height * scale_factor))
+                img_rgb = img_rgb.resize(new_size, Image.Resampling.LANCZOS)
+            enhancer = ImageEnhance.Contrast(img_rgb)
+            img_rgb = enhancer.enhance(1.05)
+
+            # 2. ส่งภาพที่ preprocess แล้วเข้า EasyOCR
+            raw_ocr_results = ocr_reader_th.readtext(
+                np.array(img_rgb),
+                add_margin=0.6,      # เพิ่มขอบรอบกล่อง
+                mag_ratio=1.0,        # ขยายภาพใน EasyOCR
+                text_threshold=0.6,   # ความมั่นใจตัวอักษร
+                low_text=0.3,         # ความคมชัดต่ำสุด
+                link_threshold=0.4,   # ความเชื่อมโยงของตัวอักษร
+                adjust_contrast=0.5,  # ปรับ contrast
+                decoder="beamsearch",
+                beamWidth=5,
+                width_ths=0.2,
+            )
+
+            ocr_items = []
+            for box, text, confidence in raw_ocr_results:
+                cleaned_text = text.strip()
+                if not cleaned_text:
+                    continue
+
+                # ตรวจสอบว่ามีตัวอักษรภาษาไทยหรือไม่
+                has_thai = any('\u0e00' <= ch <= '\u0e7f' for ch in cleaned_text)
+
+                # ถ้าเป็นภาษาอังกฤษล้วน ให้ใช้โมเดลอังกฤษช่วยอ่านเพื่อเก็บตัวพิมพ์ใหญ่
+                if not has_thai and ocr_reader_en is not None:
+                    x_min = max(0, int(min(pt[0] for pt in box)))
+                    x_max = min(img_rgb.width, int(max(pt[0] for pt in box)))
+                    y_min = max(0, int(min(pt[1] for pt in box)))
+                    y_max = min(img_rgb.height, int(max(pt[1] for pt in box)))
+
+                    if x_max > x_min and y_max > y_min:
+                        crop = img_rgb.crop((x_min, y_min, x_max, y_max))
+                        en_res = ocr_reader_en.readtext(np.array(crop), detail=1)
+                        if en_res:
+                            en_text = " ".join([item[1] for item in en_res if item[1].strip()]).strip()
+                            if en_text:
+                                cleaned_text = en_text
+                                confidence = en_res[0][2]
+
+                ocr_items.append({
+                    "text": cleaned_text,
+                    "confidence": round(float(confidence) * 100, 1),
+                    "bbox": [[float(x) / scale_factor, float(y) / scale_factor] for x, y in box],
+                })
+
+        except Exception as e:
+            # An OCR failure should not prevent an otherwise valid font prediction.
+            print(f"  OCR warning: {e}")
+
+    longest_ocr_item = max(
+        ocr_items,
+        key=lambda item: (len("".join(item["text"].split())), item["confidence"]),
+        default=None,
+    )
+
     # Load model (cached) and predict
     try:
         predictor = model_manager.get_predictor(model)
@@ -164,6 +243,10 @@ async def predict(
         raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
 
     result["total_time_ms"] = round((time.time() - total_start) * 1000, 1)
+    result["ocr"] = {
+        "text": longest_ocr_item["text"] if longest_ocr_item else "",
+        "item": longest_ocr_item,
+    }
     return result
 
 

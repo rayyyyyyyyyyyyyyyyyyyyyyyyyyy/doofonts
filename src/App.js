@@ -16,6 +16,8 @@ function App() {
   const [uploadedImage, setUploadedImage] = useState(null); // preview URL
   const [error, setError] = useState(null);
   const [timingInfo, setTimingInfo] = useState(null);
+  const [ocrResult, setOcrResult] = useState(null);
+  const [recognizedText, setRecognizedText] = useState('');
 
   const callPredictAPI = async (imageFile) => {
     const formData = new FormData();
@@ -38,10 +40,14 @@ function App() {
     setResults(null);
     setError(null);
     setTimingInfo(null);
+    setOcrResult(null);
+    setRecognizedText('');
 
     try {
       const data = await callPredictAPI(file);
       setResults(data.predictions);
+      setOcrResult(data.ocr || null);
+      setRecognizedText(data.ocr?.text || '');
       setTimingInfo({
         inference_time_ms: data.inference_time_ms,
         total_time_ms: data.total_time_ms,
@@ -64,6 +70,8 @@ function App() {
     setIsLoading(false);
     setError(null);
     setTimingInfo(null);
+    setOcrResult(null);
+    setRecognizedText('');
   };
 
   const handleSampleClick = async (sample) => {
@@ -73,6 +81,8 @@ function App() {
     setResults(null);
     setError(null);
     setTimingInfo(null);
+    setOcrResult(null);
+    setRecognizedText('');
 
     try {
       // Fetch sample image as a File object so we can send it to the API
@@ -82,6 +92,8 @@ function App() {
 
       const data = await callPredictAPI(file);
       setResults(data.predictions);
+      setOcrResult(data.ocr || null);
+      setRecognizedText(data.ocr?.text || '');
       setTimingInfo({
         inference_time_ms: data.inference_time_ms,
         total_time_ms: data.total_time_ms,
@@ -113,6 +125,9 @@ function App() {
             model={model}
             error={error}
             timingInfo={timingInfo}
+            ocrResult={ocrResult}
+            recognizedText={recognizedText}
+            onRecognizedTextChange={setRecognizedText}
           />
         </main>
       )}
