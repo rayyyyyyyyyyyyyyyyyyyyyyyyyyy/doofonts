@@ -72,8 +72,7 @@ function ResultsPanel({
   recognizedText,
   onRecognizedTextChange,
 }) {
-  const fallbackText = 'DooFonts';
-  const specimenText = recognizedText || fallbackText;
+  const specimenText = recognizedText;
 
   return (
     <div className="results-container">
@@ -126,6 +125,8 @@ function ResultsPanel({
                       onChange={(e) => onRecognizedTextChange(e.target.value)}
                       placeholder="Type to preview..."
                       rows={2}
+                      aria-label="Font preview text, maximum 50 words"
+                      title="Maximum 50 words"
                       spellCheck={false}
                       autoComplete="off"
                       autoCorrect="off"
