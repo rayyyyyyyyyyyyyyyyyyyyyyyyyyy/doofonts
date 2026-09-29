@@ -1,0 +1,92 @@
+/* specimen text - editable inline (textarea) */
+.specimen {
+  color: var(--color-text-primary);
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  cursor: text;
+  caret-color: var(--color-secondary);
+  overflow: visible;
+  transition: padding-top var(--transition), background var(--transition);
+}
+
+.specimen::placeholder {
+  color: var(--color-text-muted);
+}
+
+.specimen:focus {
+  background: var(--color-secondary-tint);
+  border-radius: var(--radius);
+}
+
+/* The tinted background already shows focus; skip the global focus ring. */
+.specimen:focus-visible {
+  box-shadow: none;
+}
+
+/* Grow past one line only when the text needs it. Hiding overflow is safe only
+   here: fonts with tall metrics (e.g. Charmonman) report more height than one
+   line box and would show a scrollbar, but the box grows with real text.
+   Browsers without field-sizing keep the one-row box and its scrollbar, so a
+   longer preview never disappears. */
+@supports (field-sizing: content) {
+  .specimen {
+    field-sizing: content;
+    overflow: hidden;
+  }
+}
+
+/* ขนาดใหญ่ — หน้าผลลัพธ์โมเดลเดียว */
+.specimen--large {
+  font-size: 56px;
+  line-height: 1.2;
+  margin: 0.75rem 0 0;
+  padding: 0.25em 0.5em 0;
+}
+
+/* ระดับที่ 1: มีสระบน หรือ วรรณยุกต์เดี่ยว (เช่น กิน, บ้าน) */
+.specimen--large.has-upper-tone {
+  padding-top: 0.55em;
+}
+
+/* ระดับที่ 2: มีสระบน + วรรณยุกต์ซ้อน 2 ชั้น (เช่น พื้นฐาน) */
+.specimen--large.has-stacked-tone {
+  padding-top: 0.95em;
+}
+
+/* ช่องของหน้า Compare — ใหญ่พอให้เทียบกับรูปที่อัปโหลดได้ชัด
+   (44px: คำ 11–12 ตัวอักษร เช่น "สิทธิมนุษยชน" ยังพอดีบรรทัดเดียวในการ์ด) */
+.specimen--compact {
+  font-size: 44px;
+  line-height: 1.25;
+  margin-top: 0.4rem;
+  padding: 0.15em 0.25em 0;
+}
+
+.specimen--compact.has-upper-tone {
+  padding-top: 0.45em;
+}
+
+.specimen--compact.has-stacked-tone {
+  padding-top: 0.85em;
+}
+
+/* หน้าจอแคบ: ลดขนาดตัวอย่างใหญ่ไม่ให้ล้นจอ */
+@media (max-width: 768px) {
+  .specimen--large {
+    font-size: 40px;
+    padding: 0.25em 0.25em 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .specimen--large {
+    font-size: 32px;
+  }
+
+  .specimen--compact {
+    font-size: 36px;
+  }
+}

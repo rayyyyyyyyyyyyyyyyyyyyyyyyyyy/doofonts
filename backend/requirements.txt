@@ -1,9 +1,14 @@
-fastapi
-uvicorn[standard]
-torch
-torchvision
-timm
-pillow
-python-multipart
-easyocr
-numpy
+# Pinned to the versions the checkpoints in backend/models were verified with
+# (tested on Python 3.14). timm/torch upgrades can rename model layers and
+# break loading the .pth files, so upgrade deliberately and re-test.
+# For GPU inference, install torch/torchvision from the matching CUDA index
+# (https://pytorch.org/get-started/locally/) at the same versions.
+fastapi==0.136.0
+uvicorn[standard]==0.45.0
+python-multipart==0.0.26
+torch==2.11.0
+torchvision==0.26.0
+timm==1.0.28
+easyocr==1.7.2
+pillow==12.2.0
+numpy==2.4.2

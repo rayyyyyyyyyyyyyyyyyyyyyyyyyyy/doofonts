@@ -4,6 +4,7 @@ model_loader.py — DualHeadClassifier + LetterboxResize + FontClassifierPredict
 ย้ายมาจาก Choopan_Train_Template.ipynb เพื่อให้ FastAPI server ใช้ inference ได้
 """
 
+import threading
 import time
 import torch
 import torch.nn as nn
@@ -193,16 +194,23 @@ FRONTEND_TO_BACKEND_KEY = {
 
 
 class ModelManager:
-    """Manages multiple model checkpoints. Loads on first use and caches in memory."""
+    """Manages multiple model checkpoints and caches them in memory (see preload_all)."""
 
     def __init__(self, models_dir: str, font_mapping: dict, style_mapping: dict):
         self.models_dir = Path(models_dir)
         self.font_mapping = font_mapping
         self.style_mapping = style_mapping
         self._cache: dict[str, FontClassifierPredictor] = {}
+        # Predictors are requested from worker threads; the lock stops two
+        # concurrent requests from loading the same checkpoint twice.
+        self._lock = threading.Lock()
 
     def get_predictor(self, frontend_model_id: str) -> FontClassifierPredictor:
         """Get or load a predictor by frontend model ID (e.g. 'convnext-v2')."""
+        with self._lock:
+            return self._get_or_load(frontend_model_id)
+
+    def _get_or_load(self, frontend_model_id: str) -> FontClassifierPredictor:
         if frontend_model_id in self._cache:
             return self._cache[frontend_model_id]
 
@@ -231,6 +239,28 @@ class ModelManager:
         print(f"  Model '{frontend_model_id}' ready!")
         return predictor
 
+    def preload_all(self) -> dict[str, str]:
+        """
+        Load every model and run one warm-up inference, so the first real
+        request pays no loading cost and its timings match later requests.
+
+        Returns {model_id: error message} for models that failed to load.
+        """
+        warmup_image = Image.new("RGB", (224, 224), (255, 255, 255))
+        errors = {}
+        for model_id in self.all_models:
+            try:
+                self.get_predictor(model_id).predict(warmup_image)
+            except Exception as e:
+                errors[model_id] = str(e)
+        return errors
+
     @property
-    def available_models(self) -> list[str]:
+    def all_models(self) -> list[str]:
+        """Every model ID the server knows about, whether or not its checkpoint loads."""
         return list(FRONTEND_TO_BACKEND_KEY.keys())
+
+    @property
+    def loaded_models(self) -> list[str]:
+        """Model IDs whose checkpoint is loaded and ready, in catalogue order."""
+        return [model_id for model_id in self.all_models if model_id in self._cache]

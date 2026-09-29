@@ -1,24 +1,31 @@
 .upload-zone {
-  border: 2px dashed var(--color-border);
-  border-radius: var(--radius);
+  border: 2px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
   padding: 3rem 2rem;
   text-align: center;
   background: var(--color-surface);
   cursor: pointer;
-  transition: all var(--transition);
+  transition: border-color var(--transition), background var(--transition);
 }
 
 /* hover / drag state — ให้รู้สึกว่า interactive */
 .upload-zone:hover,
+.upload-zone:focus-visible,
 .upload-zone.dragging {
   border-color: var(--color-accent);
-  background: var(--color-accent-light);
+  background: var(--color-surface-muted);
 }
 
 .upload-icon {
   font-size: 3.5rem;
-  color: var(--color-muted);
+  color: var(--color-text-muted);
   margin-bottom: 0.75rem;
+  transition: color var(--transition);
+}
+
+.upload-zone:hover .upload-icon,
+.upload-zone.dragging .upload-icon {
+  color: var(--color-text-primary);
 }
 
 .upload-text {
@@ -29,17 +36,4 @@
 .upload-hint {
   font-size: 0.8rem;
   color: var(--color-text-secondary);
-}
-
-/* เมื่อมี preview แล้ว */
-.upload-zone.has-preview {
-  padding: 0.5rem;
-  border-style: solid;
-}
-
-.upload-preview {
-  max-width: 100%;
-  max-height: 300px;
-  border-radius: calc(var(--radius) - 2px);
-  object-fit: contain;
 }

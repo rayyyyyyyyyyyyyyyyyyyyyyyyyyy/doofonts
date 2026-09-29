@@ -1,0 +1,121 @@
+/* Shared by ResultsPanel and CompareResultsPanel */
+
+/* กล่องหลักของหน้าผลลัพธ์ (padding กำหนดในแต่ละ panel) */
+.panel {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow);
+}
+
+/* แถบด้านบน (ปุ่มย้อนกลับ + badge) */
+.panel-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 1.5rem;
+}
+
+/* จอมือถือ: วางปุ่มย้อนกลับกับ badge ซ้อนกัน ไม่ให้ปุ่มถูกบีบจนตัดบรรทัด */
+@media (max-width: 600px) {
+  .panel-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+.back-btn {
+  background: transparent;
+  border: none;
+  font-family: var(--font-family);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius);
+  transition: color var(--transition), background var(--transition);
+}
+
+.back-btn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-muted);
+}
+
+/* Badge มุมขวาบน (ชื่อโมเดล / โหมด Compare) — หนึ่งในไม่กี่จุดที่ใช้สีรอง */
+.badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-secondary-strong);
+  background: var(--color-secondary-soft);
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.03em;
+}
+
+/* สถานะกำลังโหลด */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner--sm {
+  width: 28px;
+  height: 28px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* สถานะ Error */
+.error-state {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  text-align: center;
+}
+
+.error-message {
+  color: var(--color-danger);
+  font-weight: 600;
+  margin: 0.5rem 0;
+}
+
+/* Font & style confidence %, coloured by level (see utils/confidence.js) */
+.confidence--high {
+  color: var(--color-confidence-high);
+}
+
+.confidence--medium {
+  color: var(--color-confidence-medium);
+}
+
+.confidence--low {
+  color: var(--color-confidence-low);
+}
+
+/* Processing time */
+.timing-label {
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.timing-value {
+  color: var(--color-text-primary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.timing-separator {
+  color: var(--color-border-strong);
+  margin: 0 0.15rem;
+}
