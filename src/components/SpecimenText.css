@@ -9,7 +9,10 @@
   cursor: text;
   caret-color: var(--color-secondary);
   overflow: visible;
-  transition: padding-top var(--transition), background var(--transition);
+  /* Break long runs with no spaces (e.g. "AAAA…" or a Thai line) anywhere, so
+     the text wraps inside the box instead of widening its column. */
+  overflow-wrap: anywhere;
+  transition: background var(--transition);
 }
 
 .specimen::placeholder {
@@ -38,46 +41,30 @@
   }
 }
 
+/* padding-top always leaves room for Thai tone marks stacked on an upper vowel
+   (e.g. พื้น), so they are never cut off by the box's hidden overflow. */
+
 /* ขนาดใหญ่ — หน้าผลลัพธ์โมเดลเดียว */
 .specimen--large {
   font-size: 56px;
   line-height: 1.2;
   margin: 0.75rem 0 0;
-  padding: 0.25em 0.5em 0;
+  padding: 0.95em 0.5em 0;
 }
 
-/* ระดับที่ 1: มีสระบน หรือ วรรณยุกต์เดี่ยว (เช่น กิน, บ้าน) */
-.specimen--large.has-upper-tone {
-  padding-top: 0.55em;
-}
-
-/* ระดับที่ 2: มีสระบน + วรรณยุกต์ซ้อน 2 ชั้น (เช่น พื้นฐาน) */
-.specimen--large.has-stacked-tone {
-  padding-top: 0.95em;
-}
-
-/* ช่องของหน้า Compare — ใหญ่พอให้เทียบกับรูปที่อัปโหลดได้ชัด
-   (44px: คำ 11–12 ตัวอักษร เช่น "สิทธิมนุษยชน" ยังพอดีบรรทัดเดียวในการ์ด) */
+/* ช่องของหน้า Compare — ใหญ่พอให้เทียบกับรูปที่อัปโหลดได้ชัด */
 .specimen--compact {
   font-size: 44px;
   line-height: 1.25;
   margin-top: 0.4rem;
-  padding: 0.15em 0.25em 0;
-}
-
-.specimen--compact.has-upper-tone {
-  padding-top: 0.45em;
-}
-
-.specimen--compact.has-stacked-tone {
-  padding-top: 0.85em;
+  padding: 0.85em 0.25em 0;
 }
 
 /* หน้าจอแคบ: ลดขนาดตัวอย่างใหญ่ไม่ให้ล้นจอ */
 @media (max-width: 768px) {
   .specimen--large {
     font-size: 40px;
-    padding: 0.25em 0.25em 0;
+    padding: 0.95em 0.25em 0;
   }
 }
 

@@ -1,4 +1,3 @@
-import { getThaiToneClass } from '../utils/thai';
 import './SpecimenText.css';
 
 /**
@@ -8,7 +7,7 @@ import './SpecimenText.css';
 function SpecimenText({ font, value, onChange, size = 'large' }) {
   return (
     <textarea
-      className={`specimen specimen--${size} ${getThaiToneClass(value)}`}
+      className={`specimen specimen--${size}`}
       style={{
         fontFamily: `'${font.name}', sans-serif`,
         fontWeight: font.style?.includes('bold') ? 700 : 400,
@@ -17,8 +16,7 @@ function SpecimenText({ font, value, onChange, size = 'large' }) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder="Type to preview..."
-      // Start at one line (OCR yields a single word) and grow with the text
-      // where CSS field-sizing is supported.
+      // Start at one line and grow with the text where CSS field-sizing is supported.
       rows={1}
       aria-label="Font preview text, maximum 50 words"
       title="Maximum 50 words"

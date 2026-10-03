@@ -90,7 +90,7 @@
   margin: 0.5rem 0;
 }
 
-/* Font & style confidence %, coloured by level (see utils/confidence.js) */
+/* Font & style confidence %, coloured by level (see ConfidenceValue.js) */
 .confidence--high {
   color: var(--color-confidence-high);
 }

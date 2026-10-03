@@ -6,7 +6,6 @@ import ModelSelector from './components/ModelSelector';
 import ResultsPanel from './components/ResultsPanel';
 import CompareResultsPanel from './components/CompareResultsPanel';
 import { MODELS } from './constants/models';
-import { pickOcrPreview } from './utils/ocrPreview';
 import './App.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -47,26 +46,12 @@ async function fetchSampleFile(sample, signal) {
   return new File([blob], `${sample.name}.png`, { type: blob.type || 'image/png' });
 }
 
+/** Keep at most MAX_PREVIEW_WORDS whitespace-separated words, cutting off the rest. */
 function limitPreviewWords(text) {
-  if (typeof Intl?.Segmenter !== 'undefined') {
-    const segmenter = new Intl.Segmenter('th', { granularity: 'word' });
-    let wordCount = 0;
-
-    for (const segment of segmenter.segment(text)) {
-      if (!segment.isWordLike) continue;
-      wordCount += 1;
-      if (wordCount > MAX_PREVIEW_WORDS) {
-        return text.slice(0, segment.index).trimEnd();
-      }
-    }
-    return text;
-  }
-
-  // Fallback for browsers without Intl.Segmenter.
-  const words = text.trim().split(/\s+/);
+  const words = [...text.matchAll(/\S+/g)];
   return words.length <= MAX_PREVIEW_WORDS
     ? text
-    : words.slice(0, MAX_PREVIEW_WORDS).join(' ');
+    : text.slice(0, words[MAX_PREVIEW_WORDS].index).trimEnd();
 }
 
 function App() {
@@ -153,9 +138,9 @@ function App() {
       } else {
         setResults(data.predictions);
       }
-      const ocrPreview = pickOcrPreview(data.ocr?.candidates);
-      setOcrResult(ocrPreview);
-      setRecognizedText(ocrPreview.text);
+      // The backend returns the text of the largest OCR box, used as read.
+      setOcrResult(data.ocr || null);
+      setRecognizedText(limitPreviewWords(data.ocr?.text || ''));
       setTimingInfo({
         ocr_time_ms: data.ocr_time_ms,
         inference_time_ms: data.inference_time_ms,

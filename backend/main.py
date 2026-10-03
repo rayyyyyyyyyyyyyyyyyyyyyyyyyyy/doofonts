@@ -54,22 +54,38 @@ ocr_lock = threading.Lock()
 OCR_TARGET_HEIGHT = 400
 
 
+def bbox_area(bbox: list[list[float]]) -> float:
+    """Area of an OCR box polygon (shoelace formula, so rotated boxes work too)."""
+    corners = list(zip(bbox, bbox[1:] + bbox[:1]))
+    return abs(sum(x1 * y2 - x2 * y1 for (x1, y1), (x2, y2) in corners)) / 2
+
+
 def run_ocr(image: Image.Image) -> dict:
     """
-    Run EasyOCR on the given PIL image and return every text box it read.
+    Run EasyOCR on the given PIL image and return the text of its largest box.
 
     Returns:
-        {"candidates": [{"text", "confidence", "bbox"}, ...]}
-    Thai is written without spaces, so a candidate is often a whole line. The
-    frontend (src/utils/ocrPreview.js) segments lines into words with the
-    browser's Intl.Segmenter and picks the preview word; Python has no built-in
-    Thai word segmentation and the project avoids an extra dependency for it.
+        {"text": str, "item": dict | None}
+        where item is {"text", "confidence", "bbox"} of the box with the largest
+        area (ties go to the higher confidence). The text is used as read, so a
+        Thai line written without spaces comes back as the whole line.
     """
     with ocr_lock:
-        return _run_ocr_unlocked(image)
+        ocr_items = _run_ocr_unlocked(image)
+
+    largest = max(
+        ocr_items,
+        key=lambda item: (bbox_area(item["bbox"]), item["confidence"]),
+        default=None,
+    )
+    return {
+        "text": largest["text"] if largest else "",
+        "item": largest,
+    }
 
 
-def _run_ocr_unlocked(image: Image.Image) -> dict:
+def _run_ocr_unlocked(image: Image.Image) -> list[dict]:
+    """Every text box EasyOCR read: [{"text", "confidence", "bbox"}, ...]."""
     ocr_items: list[dict] = []
     if ocr_reader_th is not None:
         try:
@@ -116,12 +132,12 @@ def _run_ocr_unlocked(image: Image.Image) -> dict:
                     if x_max > x_min and y_max > y_min:
                         crop = img_rgb.crop((x_min, y_min, x_max, y_max))
                         # width_ths=0.0: the Thai detector's box can spill into the
-                        # next word ("Whereas t"); without it EasyOCR merges both into
-                        # one multi-word result that is never picked as a single word.
+                        # next word ("Whereas t"); keeping words separate returns the
+                        # clean word ("Whereas") instead of the merged fragment.
                         en_res = ocr_reader_en.readtext(np.array(crop), detail=1, width_ths=0.0)
                         if en_res:
                             # Keep individual English word boxes; joining them
-                            # would turn a line into one incorrect candidate.
+                            # would turn a line into one incorrect result.
                             for en_box, en_text, en_confidence in en_res:
                                 en_text = en_text.strip()
                                 if not en_text:
@@ -148,7 +164,7 @@ def _run_ocr_unlocked(image: Image.Image) -> dict:
         except Exception as e:
             print(f"  OCR warning: {e}")
 
-    return {"candidates": ocr_items}
+    return ocr_items
 
 
 async def read_upload_image(file: UploadFile) -> Image.Image:

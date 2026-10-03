@@ -6,7 +6,8 @@
 /* จัดเลย์เอาต์แบ่ง 2 ฝั่ง (ซ้าย-ขวา) */
 .results-content {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  /* minmax(0, 1fr): the column may shrink below its longest unbroken text. */
+  grid-template-columns: 300px minmax(0, 1fr);
   gap: 2rem;
   align-items: start;
 }
@@ -151,7 +152,7 @@
 
   /* รูปอยู่ด้านบน ผลลัพธ์อยู่ด้านล่าง */
   .results-content {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1.25rem;
   }
 
