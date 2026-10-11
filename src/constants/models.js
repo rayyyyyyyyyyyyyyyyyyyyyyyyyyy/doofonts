@@ -1,5 +1,5 @@
 /**
- * Shared model constants used by ModelSelector, CompareResultsPanel, etc.
+ * รายชื่อโมเดลที่ใช้ร่วมกันในตัวเลือกโมเดลและหน้าผลลัพธ์
  */
 
 export const MODELS = [
@@ -10,10 +10,10 @@ export const MODELS = [
   { id: 'vit', name: 'ViT' },
 ];
 
-/** Ordered list of model IDs (for compare grid rendering). */
+/** ลำดับโมเดลที่ใช้แสดงในกริดเปรียบเทียบ */
 export const MODEL_ORDER = MODELS.map((m) => m.id);
 
-/** Mapping from model ID to display name. */
+/** จับคู่รหัสโมเดลกับชื่อที่แสดงบนหน้าเว็บ */
 export const MODEL_DISPLAY_NAMES = Object.fromEntries(
   MODELS.map((m) => [m.id, m.name])
 );

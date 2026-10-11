@@ -1,4 +1,4 @@
-/* specimen text - editable inline (textarea) */
+/* ช่องข้อความตัวอย่างที่แก้ไขได้ */
 .specimen {
   color: var(--color-text-primary);
   width: 100%;
@@ -9,8 +9,7 @@
   cursor: text;
   caret-color: var(--color-secondary);
   overflow: visible;
-  /* Break long runs with no spaces (e.g. "AAAA…" or a Thai line) anywhere, so
-     the text wraps inside the box instead of widening its column. */
+  /* ขึ้นบรรทัดใหม่ได้แม้ไม่มีช่องว่าง เพื่อไม่ให้ข้อความดันกล่องกว้างขึ้น */
   overflow-wrap: anywhere;
   transition: background var(--transition);
 }
@@ -24,16 +23,13 @@
   border-radius: var(--radius);
 }
 
-/* The tinted background already shows focus; skip the global focus ring. */
+/* ใช้สีพื้นหลังบอกว่ากำลังแก้ไข จึงไม่ต้องแสดงกรอบ focus ซ้ำ */
 .specimen:focus-visible {
   box-shadow: none;
 }
 
-/* Grow past one line only when the text needs it. Hiding overflow is safe only
-   here: fonts with tall metrics (e.g. Charmonman) report more height than one
-   line box and would show a scrollbar, but the box grows with real text.
-   Browsers without field-sizing keep the one-row box and its scrollbar, so a
-   longer preview never disappears. */
+/* ถ้ารองรับ field-sizing ให้ช่องสูงตามข้อความและซ่อนแถบเลื่อน
+   ถ้าไม่รองรับ ยังใช้แถบเลื่อนเพื่ออ่านข้อความที่ยาวเกินช่องได้ */
 @supports (field-sizing: content) {
   .specimen {
     field-sizing: content;
@@ -41,8 +37,7 @@
   }
 }
 
-/* padding-top always leaves room for Thai tone marks stacked on an upper vowel
-   (e.g. พื้น), so they are never cut off by the box's hidden overflow. */
+/* เว้นพื้นที่ด้านบนในทั้งสองขนาด เพื่อให้สระและวรรณยุกต์ไทยไม่ถูกตัด */
 
 /* ขนาดใหญ่ — หน้าผลลัพธ์โมเดลเดียว */
 .specimen--large {

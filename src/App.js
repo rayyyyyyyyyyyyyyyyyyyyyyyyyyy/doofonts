@@ -9,7 +9,7 @@ import { MODELS } from './constants/models';
 import './App.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-const MAX_PREVIEW_WORDS = 50;
+const MAX_PREVIEW_CHARACTERS = 50;
 const TOP_K = 3;
 const SERVER_ERROR_MESSAGE = 'Cannot connect to the server.';
 const SAMPLES = [
@@ -18,14 +18,23 @@ const SAMPLES = [
   { src: '/samples/Kanit.png', name: 'Kanit' },
 ];
 
-/** Turn a failed request into { message, serverUnreachable } for the results panels. */
+/** เตรียมข้อความแจ้งผู้ใช้ เมื่อเรียก API ไม่สำเร็จ */
 function describeError(err) {
-  // No response at all means the backend is down or blocked (not a 4xx/5xx).
+  // ถ้าเซิร์ฟเวอร์ไม่ตอบกลับ ให้แจ้งว่าเชื่อมต่อไม่ได้
   const serverUnreachable = axios.isAxiosError(err) && !err.response;
+  const detail = err.response?.data?.detail;
+  let message = serverUnreachable ? SERVER_ERROR_MESSAGE : (err.message || 'Prediction failed.');
+
+  if (typeof detail === 'string' && detail) {
+    message = detail;
+  } else if (Array.isArray(detail)) {
+    // ถ้า API แจ้งว่าข้อมูลไม่ถูกต้องหลายรายการ ให้รวมเป็นข้อความเดียว
+    const messages = detail.map((item) => item?.msg).filter((msg) => typeof msg === 'string' && msg);
+    if (messages.length) message = messages.join('; ');
+  }
+
   return {
-    message:
-      err.response?.data?.detail ||
-      (serverUnreachable ? SERVER_ERROR_MESSAGE : err.message),
+    message,
     serverUnreachable,
   };
 }
@@ -46,12 +55,9 @@ async function fetchSampleFile(sample, signal) {
   return new File([blob], `${sample.name}.png`, { type: blob.type || 'image/png' });
 }
 
-/** Keep at most MAX_PREVIEW_WORDS whitespace-separated words, cutting off the rest. */
-function limitPreviewWords(text) {
-  const words = [...text.matchAll(/\S+/g)];
-  return words.length <= MAX_PREVIEW_WORDS
-    ? text
-    : text.slice(0, words[MAX_PREVIEW_WORDS].index).trimEnd();
+/** จำกัด 50 ตัวอักษร โดยนับช่องว่าง สระ และวรรณยุกต์ด้วย */
+function limitPreviewCharacters(text) {
+  return Array.from(text).slice(0, MAX_PREVIEW_CHARACTERS).join('');
 }
 
 function App() {
@@ -59,24 +65,23 @@ function App() {
   const [model, setModel] = useState('convnext-v2');
   const [results, setResults] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState(null); // preview URL
-  const [error, setError] = useState(null); // { message, serverUnreachable }
+  const [uploadedImage, setUploadedImage] = useState(null); // URL รูปที่แสดงบนหน้าเว็บ
+  const [error, setError] = useState(null); // ข้อความผิดพลาดและสถานะการเชื่อมต่อ
   const [timingInfo, setTimingInfo] = useState(null);
   const [ocrResult, setOcrResult] = useState(null);
   const [recognizedText, setRecognizedText] = useState('');
 
-  // Compare-all mode
+  // ข้อมูลสำหรับโหมดเปรียบเทียบทุกโมเดล
   const [compareMode, setCompareMode] = useState(false);
   const [modelResults, setModelResults] = useState(null);
 
-  // Model IDs the backend actually loaded (null until known / if unreachable).
+  // รายชื่อโมเดลที่โหลดแล้ว; null คือยังไม่ได้รายชื่อจากเซิร์ฟเวอร์
   const [availableModels, setAvailableModels] = useState(null);
 
-  // AbortController of the in-flight prediction, so a newer upload or "back"
-  // can cancel it and its late response never overwrites current state.
+  // เก็บคำขอที่กำลังรอผลไว้ เพื่อยกเลิกเมื่อส่งรูปใหม่หรือกดย้อนกลับ
   const requestRef = useRef(null);
 
-  // Release the previous upload's blob URL once it is no longer displayed.
+  // เลิกใช้ URL ชั่วคราวของรูปเก่า เพื่อคืนหน่วยความจำ
   useEffect(() => {
     if (!uploadedImage?.startsWith('blob:')) return undefined;
     return () => URL.revokeObjectURL(uploadedImage);
@@ -87,11 +92,11 @@ function App() {
     axios
       .get(`${API_URL}/api/models`, { signal: controller.signal })
       .then((response) => setAvailableModels(response.data.models))
-      .catch(() => {}); // Backend down: keep every model selectable; predictions report the error.
+      .catch(() => {}); // ถ้าโหลดรายชื่อไม่ได้ ให้ลองเลือกโมเดลและทำนายได้ตามเดิม
     return () => controller.abort();
   }, []);
 
-  // If the selected model failed to load on the server, fall back to one that did.
+  // ถ้าโมเดลที่เลือกไม่มีในรายชื่อ ให้เปลี่ยนเป็นโมเดลแรกที่โหลดแล้ว
   useEffect(() => {
     if (availableModels?.length && !availableModels.includes(model)) {
       setModel(availableModels[0]);
@@ -113,7 +118,7 @@ function App() {
   };
 
   const handleRecognizedTextChange = (text) => {
-    setRecognizedText(limitPreviewWords(text));
+    setRecognizedText(limitPreviewCharacters(text));
   };
 
   const runPrediction = async (previewUrl, loadFile) => {
@@ -138,16 +143,16 @@ function App() {
       } else {
         setResults(data.predictions);
       }
-      // The backend returns the text of the largest OCR box, used as read.
+      // ใช้ข้อความจากกรอบ OCR ที่ใหญ่ที่สุด แล้วจำกัดความยาวสำหรับแสดงตัวอย่าง
       setOcrResult(data.ocr || null);
-      setRecognizedText(limitPreviewWords(data.ocr?.text || ''));
+      setRecognizedText(limitPreviewCharacters(data.ocr?.text || ''));
       setTimingInfo({
         ocr_time_ms: data.ocr_time_ms,
         inference_time_ms: data.inference_time_ms,
         total_time_ms: data.total_time_ms,
       });
     } catch (err) {
-      // Cancelled by a newer request or by "back"; nothing to report.
+      // การยกเลิกคำขอไม่ใช่ข้อผิดพลาด จึงไม่ต้องแจ้งผู้ใช้
       if (controller.signal.aborted) return;
       console.error('Prediction error:', err);
       setError(describeError(err));
@@ -220,7 +225,7 @@ function App() {
             <p className="upload-subtitle">Find fonts from any image in seconds</p>
           </div>
 
-          {/* Compare mode toggle */}
+          {/* เลือกโหมดโมเดลเดียวหรือเปรียบเทียบทุกโมเดล */}
           <div className="compare-toggle-wrapper">
             <button
               className={`compare-toggle-btn ${!compareMode ? 'active' : ''}`}

@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import './OcrImage.css';
 
 /**
- * Renders an image with an OCR bounding-box overlay.
- * Used by both ResultsPanel and CompareResultsPanel.
+ * แสดงรูปพร้อมกรอบข้อความที่ OCR เลือก
+ * ใช้ร่วมกันในหน้าโมเดลเดียวและหน้าเปรียบเทียบ
  */
 function OcrImage({ src, bbox, className = 'image-box' }) {
   const containerRef = useRef(null);
@@ -18,6 +18,7 @@ function OcrImage({ src, bbox, className = 'image-box' }) {
       return;
     }
 
+    // หาขนาดและตำแหน่งรูปบนหน้าจอ โดยคำนึงถึงช่องว่างรอบรูปด้วย
     const scale = Math.min(image.clientWidth / image.naturalWidth, image.clientHeight / image.naturalHeight);
     const displayedWidth = image.naturalWidth * scale;
     const displayedHeight = image.naturalHeight * scale;
@@ -26,6 +27,7 @@ function OcrImage({ src, bbox, className = 'image-box' }) {
     const xValues = bbox.map(([x]) => x);
     const yValues = bbox.map(([, y]) => y);
 
+    // ย่อหรือขยายตำแหน่งกรอบ ให้ตรงกับรูปที่ผู้ใช้เห็น
     setBoxStyle({
       left: imageLeft + Math.min(...xValues) * scale,
       top: imageTop + Math.min(...yValues) * scale,
@@ -35,6 +37,7 @@ function OcrImage({ src, bbox, className = 'image-box' }) {
   }, [bbox]);
 
   useEffect(() => {
+    // ปรับตำแหน่งกรอบใหม่เมื่อกล่องรูปเปลี่ยนขนาด
     const observer = new ResizeObserver(updateBoxPosition);
     if (containerRef.current) observer.observe(containerRef.current);
     updateBoxPosition();

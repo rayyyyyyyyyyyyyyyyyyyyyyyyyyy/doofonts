@@ -1,7 +1,7 @@
 """
-model_loader.py — DualHeadClassifier + LetterboxResize + FontClassifierPredictor
+model_loader.py — เตรียมภาพ โหลดโมเดล และทำนายฟอนต์กับรูปแบบตัวอักษร
 
-ย้ายมาจาก Choopan_Train_Template.ipynb เพื่อให้ FastAPI server ใช้ inference ได้
+ย้ายมาจาก Choopan_Train_Template.ipynb เพื่อให้ FastAPI เรียกใช้โมเดลที่ฝึกแล้ว
 """
 
 import threading
@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
-# Preprocessing: Letterbox Resize (pads to 224x224 without distortion)
+# ย่อภาพโดยคงสัดส่วน แล้วเติมพื้นที่ว่างให้ครบ 224 × 224
 # ---------------------------------------------------------------------------
 class LetterboxResize:
     def __init__(self, target_size=(224, 224), fill_color=(255, 255, 255)):
@@ -35,7 +35,7 @@ class LetterboxResize:
 
 
 # ---------------------------------------------------------------------------
-# Model Architecture: Dual-Head Classifier (font + style)
+# โมเดลที่ทำนายสองอย่าง: ชื่อฟอนต์และรูปแบบตัวอักษร
 # ---------------------------------------------------------------------------
 class DualHeadClassifier(nn.Module):
     SUPPORTED_MODELS = {
@@ -55,7 +55,7 @@ class DualHeadClassifier(nn.Module):
 
         self.model_name = self.SUPPORTED_MODELS[model_key]
 
-        # Init backbone model
+        # ให้โมเดลหลักหาลักษณะของภาพ แล้วส่งต่อไปทำนายฟอนต์และรูปแบบตัวอักษร
         self.backbone = timm.create_model(
             self.model_name,
             pretrained=pretrained,
@@ -63,7 +63,7 @@ class DualHeadClassifier(nn.Module):
         )
         in_features = self.backbone.num_features
 
-        # Font Head: Multi-layer with projection
+        # ส่วนทำนายชื่อฟอนต์
         self.font_head = nn.Sequential(
             nn.Linear(in_features, 512),
             nn.LayerNorm(512),
@@ -72,7 +72,7 @@ class DualHeadClassifier(nn.Module):
             nn.Linear(512, num_font_classes),
         )
 
-        # Style Head: Multi-layer with projection
+        # ส่วนทำนายรูปแบบตัวอักษร เช่น ตัวหนาหรือตัวเอียง
         self.style_head = nn.Sequential(
             nn.Linear(in_features, 256),
             nn.LayerNorm(256),
@@ -87,27 +87,27 @@ class DualHeadClassifier(nn.Module):
 
 
 # ---------------------------------------------------------------------------
-# Predictor: Loads checkpoint and runs inference
+# โหลดน้ำหนักที่ฝึกแล้ว และเตรียมขั้นตอนทำนาย
 # ---------------------------------------------------------------------------
 class FontClassifierPredictor:
-    """Loads a trained DualHeadClassifier checkpoint and predicts font + style."""
+    """โหลดน้ำหนักโมเดลที่ฝึกแล้ว เพื่อทำนายชื่อฟอนต์และรูปแบบตัวอักษร"""
 
     def __init__(self, model_key: str, checkpoint_path: str,
                  font_mapping: dict, style_mapping: dict):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        # Reverse mappings: index -> name
+        # เปลี่ยนจากชื่อ → หมายเลข เป็นหมายเลข → ชื่อ เพื่อแปลผลทำนาย
         self.font_names = {v: k for k, v in font_mapping.items()}
         self.style_names = {v: k for k, v in style_mapping.items()}
 
-        # Build model architecture (pretrained=False — we load our own weights)
+        # สร้างโครงสร้างโมเดลก่อน แล้วโหลดน้ำหนักจากไฟล์ของเรา
         self.model = DualHeadClassifier(
             model_key=model_key,
             num_font_classes=len(self.font_names),
             num_style_classes=len(self.style_names),
         )
 
-        # Load checkpoint
+        # โหลดค่าที่ได้จากการฝึก รองรับทั้งไฟล์รวมข้อมูลและไฟล์น้ำหนักโดยตรง
         checkpoint = torch.load(checkpoint_path, map_location=self.device, weights_only=False)
         if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
             self.model.load_state_dict(checkpoint['model_state_dict'])
@@ -120,7 +120,7 @@ class FontClassifierPredictor:
         self.model.to(self.device)
         self.model.eval()
 
-        # Image preprocessing pipeline (same as training validation)
+        # ย่อภาพ เติมขอบ และปรับค่าพิกเซลแบบเดียวกับตอนตรวจผลระหว่างฝึก
         self.transform = transforms.Compose([
             LetterboxResize(target_size=(224, 224), fill_color=(255, 255, 255)),
             transforms.ToTensor(),
@@ -129,16 +129,8 @@ class FontClassifierPredictor:
 
     def predict(self, image: Image.Image, top_k: int = 3) -> dict:
         """
-        Predict font family and style from a PIL Image.
-
-        Returns:
-            {
-                "predictions": [
-                    {"name": "Kanit", "confidence": 96.8, "style": "bold", "style_confidence": 92.1},
-                    ...
-                ],
-                "inference_time_ms": 45.2
-            }
+        ทำนายฟอนต์อันดับสูงสุดจำนวน top_k พร้อมรูปแบบตัวอักษรและค่าความมั่นใจ
+        คืน predictions และ inference_time_ms ซึ่งรวมเวลาเตรียมภาพด้วย
         """
         start_time = time.time()
 
@@ -151,10 +143,10 @@ class FontClassifierPredictor:
             font_probs = torch.softmax(font_logits, dim=1)
             style_probs = torch.softmax(style_logits, dim=1)
 
-            # Top-K font predictions
+            # เลือกฟอนต์ที่ได้ค่าความมั่นใจสูงสุดตามจำนวน top_k
             top_font_probs, top_font_indices = torch.topk(font_probs, k=top_k, dim=1)
 
-            # Best style prediction
+            # เลือกรูปแบบตัวอักษรที่ได้ค่าความมั่นใจสูงสุดหนึ่งแบบต่อภาพ
             style_id = torch.argmax(style_probs, dim=1).item()
             style_conf = style_probs[0][style_id].item() * 100
 
@@ -180,10 +172,10 @@ class FontClassifierPredictor:
 
 
 # ---------------------------------------------------------------------------
-# Model Manager: Caches loaded models in memory
+# เก็บโมเดลที่โหลดแล้วในหน่วยความจำ เพื่อใช้ซ้ำ
 # ---------------------------------------------------------------------------
 
-# Mapping from frontend model IDs to backend model keys
+# จับคู่รหัสโมเดลจากหน้าเว็บกับชื่อที่ใช้โหลดไฟล์น้ำหนัก
 FRONTEND_TO_BACKEND_KEY = {
     'convnext-v2': 'convnext',
     'efficientnet-v2': 'efficientnet',
@@ -194,19 +186,18 @@ FRONTEND_TO_BACKEND_KEY = {
 
 
 class ModelManager:
-    """Manages multiple model checkpoints and caches them in memory (see preload_all)."""
+    """จัดการโมเดลหลายตัว และเก็บตัวที่โหลดแล้วไว้ใช้ซ้ำ"""
 
     def __init__(self, models_dir: str, font_mapping: dict, style_mapping: dict):
         self.models_dir = Path(models_dir)
         self.font_mapping = font_mapping
         self.style_mapping = style_mapping
         self._cache: dict[str, FontClassifierPredictor] = {}
-        # Predictors are requested from worker threads; the lock stops two
-        # concurrent requests from loading the same checkpoint twice.
+        # ถ้ามีคำขอพร้อมกัน ให้รอโหลดโมเดลทีละคำขอ เพื่อไม่โหลดตัวเดียวกันซ้ำ
         self._lock = threading.Lock()
 
     def get_predictor(self, frontend_model_id: str) -> FontClassifierPredictor:
-        """Get or load a predictor by frontend model ID (e.g. 'convnext-v2')."""
+        """ใช้โมเดลตามรหัสจากหน้าเว็บ ถ้ายังไม่มีในหน่วยความจำให้โหลดก่อน"""
         with self._lock:
             return self._get_or_load(frontend_model_id)
 
@@ -241,10 +232,8 @@ class ModelManager:
 
     def preload_all(self) -> dict[str, str]:
         """
-        Load every model and run one warm-up inference, so the first real
-        request pays no loading cost and its timings match later requests.
-
-        Returns {model_id: error message} for models that failed to load.
+        โหลดทุกโมเดลและทดลองทำนายด้วยภาพว่าง เพื่อลดเวลารอคำขอแรก
+        คืนรหัสโมเดลและข้อความผิดพลาด หากโหลดหรือทดลองทำนายไม่สำเร็จ
         """
         warmup_image = Image.new("RGB", (224, 224), (255, 255, 255))
         errors = {}
@@ -252,15 +241,17 @@ class ModelManager:
             try:
                 self.get_predictor(model_id).predict(warmup_image)
             except Exception as e:
+                # เอาโมเดลที่ทดลองทำนายไม่สำเร็จออกจากรายชื่อที่โหลดแล้ว
+                self._cache.pop(model_id, None)
                 errors[model_id] = str(e)
         return errors
 
     @property
     def all_models(self) -> list[str]:
-        """Every model ID the server knows about, whether or not its checkpoint loads."""
+        """รหัสโมเดลทั้งหมดที่รู้จัก รวมตัวที่ยังโหลดไม่ได้"""
         return list(FRONTEND_TO_BACKEND_KEY.keys())
 
     @property
     def loaded_models(self) -> list[str]:
-        """Model IDs whose checkpoint is loaded and ready, in catalogue order."""
+        """รหัสโมเดลที่เก็บในหน่วยความจำแล้ว เรียงตามรายชื่อโมเดล"""
         return [model_id for model_id in self.all_models if model_id in self._cache]

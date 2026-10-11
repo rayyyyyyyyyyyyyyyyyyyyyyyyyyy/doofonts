@@ -2,8 +2,8 @@ import { MODELS } from '../constants/models';
 import './ModelSelector.css';
 
 /**
- * @param availableModels IDs the backend loaded, or null when unknown
- *   (all models stay selectable then; the prediction reports any error).
+ * availableModels คือรายชื่อโมเดลที่ backend โหลดแล้ว
+ * ถ้าเป็น null ยังให้เลือกได้ทุกโมเดล และแจ้งข้อผิดพลาดตอนทำนาย
  */
 function ModelSelector({ selectedModel, onModelChange, availableModels }) {
   return (

@@ -1,11 +1,11 @@
-/* ===== Compare Results Panel ===== */
+/* ===== หน้าผลลัพธ์เปรียบเทียบโมเดล ===== */
 
 /* สไตล์พื้นฐานอยู่ใน Panel.css (.panel, .panel-topbar, .back-btn, .badge, .spinner) */
 .compare-container {
   padding: 1.25rem 1.5rem;
 }
 
-/* ---------- Top bar ---------- */
+/* ---------- แถบด้านบน ---------- */
 .compare-topbar {
   margin-bottom: 1.25rem;
 }
@@ -34,23 +34,22 @@
   margin: 0 0.5rem;
 }
 
-/* Request-level error (e.g. backend unreachable) */
+/* ข้อผิดพลาดของคำขอ เช่น เชื่อมต่อ backend ไม่ได้ */
 .compare-error {
   padding: 1rem;
   margin-bottom: 0.75rem;
 }
 
-/* ---------- 3 × 2 Grid ---------- */
+/* ---------- กริดรูปและผลทำนาย ---------- */
 .compare-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  /* Every row as tall as the tallest one, so all cards share one size
-     (the uploaded-image card would otherwise make the first row taller). */
+  /* ให้ทุกแถวสูงเท่ากัน เพื่อให้ card มีขนาดสม่ำเสมอ */
   grid-auto-rows: 1fr;
   gap: 0.75rem;
 }
 
-/* ---------- Cell ---------- */
+/* ---------- กล่องแต่ละช่อง ---------- */
 .compare-cell {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -66,7 +65,7 @@
   border-color: var(--color-border-strong);
 }
 
-/* Cell header */
+/* หัวข้อของแต่ละช่อง */
 .compare-cell-header {
   display: flex;
   align-items: center;
@@ -83,7 +82,7 @@
   letter-spacing: 0.02em;
 }
 
-/* Cell body */
+/* เนื้อหาของแต่ละช่อง */
 .compare-cell-body {
   padding: 0.7rem;
   flex: 1;
@@ -92,7 +91,7 @@
   min-height: 130px;
 }
 
-/* Per-model timing footer */
+/* เวลาทำนายโมเดลที่ด้านล่างของ card */
 .compare-cell-footer {
   display: flex;
   align-items: center;
@@ -103,7 +102,7 @@
   font-size: 0.75rem;
 }
 
-/* Uploaded image cell — highlighted with the secondary colour */
+/* เน้นช่องรูปอัปโหลดด้วยสีรอง */
 .compare-cell--uploaded {
   border-color: var(--color-secondary);
 }
@@ -120,8 +119,7 @@
   color: var(--color-secondary-strong);
 }
 
-/* The image fills whatever height the model cards need instead of forcing a
-   4:3 box, which used to make every row taller than its content. */
+/* ให้กล่องรูปสูงตาม card ผลทำนาย ไม่บังคับอัตราส่วน 4:3 */
 .compare-cell-body--image {
   padding: 0.5rem;
   background: var(--color-surface);
@@ -133,8 +131,7 @@
   min-height: 100px;
 }
 
-/* Absolutely positioned so the image never adds to the row height;
-   OcrImage measures offsetLeft/clientWidth, so the OCR box still lines up. */
+/* วางรูปแบบ absolute เพื่อไม่ให้รูปดันแถวสูงขึ้น; OcrImage คำนวณกรอบตามขนาดนี้ */
 .compare-cell-body--image .image-box img {
   position: absolute;
   inset: 0.5rem;
@@ -143,7 +140,7 @@
   border-radius: var(--radius);
 }
 
-/* Loading state */
+/* สถานะกำลังทำนาย */
 .compare-cell-loading {
   display: flex;
   flex-direction: column;
@@ -156,7 +153,7 @@
   font-weight: 500;
 }
 
-/* Error state */
+/* สถานะผิดพลาด */
 .compare-cell-error {
   display: flex;
   flex-direction: column;
@@ -179,7 +176,7 @@
   word-break: break-word;
 }
 
-/* Result state */
+/* ผลทำนาย */
 .compare-cell-result {
   display: flex;
   flex-direction: column;
@@ -208,7 +205,7 @@
   flex-shrink: 0;
 }
 
-/* Style tag */
+/* ป้ายรูปแบบตัวอักษร */
 .compare-font-style {
   display: flex;
   align-items: center;
@@ -230,7 +227,7 @@
   font-weight: 600;
 }
 
-/* Runner-up chips */
+/* ป้ายฟอนต์อันดับรอง */
 .compare-runners {
   display: flex;
   flex-wrap: wrap;
@@ -243,7 +240,7 @@
   font-size: 0.7rem;
   font-weight: 500;
   color: var(--color-text-secondary);
-  /* Light chip + border keeps the small grey text readable (4.6:1). */
+  /* พื้นหลังอ่อนและเส้นขอบช่วยให้ข้อความขนาดเล็กอ่านชัด */
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   padding: 0.15rem 0.45rem;
@@ -255,7 +252,7 @@
   color: var(--color-text-secondary);
 }
 
-/* Empty / placeholder */
+/* สถานะไม่มีผลหรือไม่มีรูป */
 .compare-cell-empty,
 .compare-cell-placeholder {
   display: flex;
@@ -267,7 +264,7 @@
   font-weight: 500;
 }
 
-/* ---------- Responsive ---------- */
+/* ---------- ปรับการจัดวางตามขนาดหน้าจอ ---------- */
 @media (max-width: 960px) {
   .compare-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

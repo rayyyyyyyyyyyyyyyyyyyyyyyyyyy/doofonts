@@ -6,7 +6,7 @@
 /* จัดเลย์เอาต์แบ่ง 2 ฝั่ง (ซ้าย-ขวา) */
 .results-content {
   display: grid;
-  /* minmax(0, 1fr): the column may shrink below its longest unbroken text. */
+  /* ยอมให้คอลัมน์หดได้ แม้มีข้อความยาวที่ไม่มีช่องว่าง */
   grid-template-columns: 300px minmax(0, 1fr);
   gap: 2rem;
   align-items: start;
@@ -59,7 +59,7 @@
   font-weight: 700;
 }
 
-/* Style info row */
+/* แถวรูปแบบตัวอักษร */
 .font-style-info {
   display: flex;
   align-items: center;
@@ -67,7 +67,7 @@
   margin-bottom: 0.5rem;
 }
 
-/* One style row for the whole image, above the ranked fonts */
+/* แสดงรูปแบบตัวอักษรหนึ่งครั้งต่อภาพ เหนือรายชื่อฟอนต์ */
 .results-style {
   padding-bottom: 1rem;
   margin-bottom: 1rem;
@@ -133,7 +133,7 @@
   padding: 2rem;
 }
 
-/* Processing time info */
+/* ข้อมูลเวลาประมวลผล */
 .timing-info {
   display: flex;
   align-items: center;
@@ -144,7 +144,7 @@
   font-size: 0.8rem;
 }
 
-/* ---------- Responsive ---------- */
+/* ---------- ปรับการจัดวางตามขนาดหน้าจอ ---------- */
 @media (max-width: 768px) {
   .results-container {
     padding: 1rem;

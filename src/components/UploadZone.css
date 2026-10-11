@@ -8,7 +8,7 @@
   transition: border-color var(--transition), background var(--transition);
 }
 
-/* hover / drag state — ให้รู้สึกว่า interactive */
+/* เปลี่ยนสีเมื่อวางเมาส์หรือลากไฟล์เข้ามา เพื่อบอกว่าอัปโหลดได้ */
 .upload-zone:hover,
 .upload-zone:focus-visible,
 .upload-zone.dragging {

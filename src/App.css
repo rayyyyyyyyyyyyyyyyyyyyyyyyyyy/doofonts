@@ -1,4 +1,4 @@
-/* ---------- Page layouts ---------- */
+/* ---------- การจัดวางแต่ละหน้า ---------- */
 .upload-page {
   max-width: 800px;
   margin: 0 auto;
@@ -22,7 +22,7 @@
   padding: 0 1.5rem;
 }
 
-/* ---------- Upload hero ---------- */
+/* ---------- หัวข้อหน้าอัปโหลด ---------- */
 .upload-hero {
   text-align: center;
 }
@@ -39,7 +39,7 @@
   margin: 0.5rem 0 0;
 }
 
-/* ---------- Single / Compare toggle ---------- */
+/* ---------- ปุ่มเลือกโหมดโมเดลเดียวหรือเปรียบเทียบ ---------- */
 .compare-toggle-wrapper {
   display: flex;
   justify-content: center;
@@ -86,7 +86,7 @@
   padding: 0.6rem 1rem;
 }
 
-/* ---------- Sample images ---------- */
+/* ---------- รูปตัวอย่าง ---------- */
 .sample-section {
   text-align: center;
 }
@@ -168,7 +168,7 @@
 @media (max-width: 480px) {
   .sample-images {
     gap: 0.6rem;
-    flex-wrap: wrap; /* very narrow screens: wrap instead of overflowing */
+    flex-wrap: wrap; /* จอแคบมาก: ขึ้นแถวใหม่แทนการล้นจอ */
   }
 
   .sample-img-wrapper {

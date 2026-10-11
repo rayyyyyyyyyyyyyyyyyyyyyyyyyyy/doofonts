@@ -4,9 +4,15 @@ import './UploadZone.css';
 function UploadZone({ onImageSelected }) {
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef(null);
+  const [fileError, setFileError] = useState('');
 
   const handleFile = (file) => {
     if (!file) return;
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      setFileError('Please select a PNG, JPG or WEBP image.');
+      return;
+    }
+    setFileError('');
     onImageSelected(file);
   };
 
@@ -46,12 +52,16 @@ function UploadZone({ onImageSelected }) {
       <i className="fi fi-ss-cloud-upload upload-icon" aria-hidden="true"></i>
       <p className="upload-text">Drag and drop an image here, or click to browse</p>
       <span className="upload-hint">Supports PNG, JPG and WEBP</span>
+      {fileError && <p className="upload-file-error" role="alert">{fileError}</p>}
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/png,image/jpeg,image/webp"
         hidden
-        onChange={(e) => handleFile(e.target.files[0])}
+        onChange={(e) => {
+          handleFile(e.target.files[0]);
+          e.target.value = '';
+        }}
       />
     </div>
   );

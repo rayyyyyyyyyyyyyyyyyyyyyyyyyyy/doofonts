@@ -1,62 +1,59 @@
 /*
- * Design tokens — the single place to change the look of the app.
- * Theme: minimal black & white. Black is the interactive accent; indigo
- * (--color-secondary) is kept for a few highlights only (focus ring, caret,
- * model badge, uploaded-image card). Status colours carry meaning only.
- * Neutrals follow one grey scale (zinc) instead of ad-hoc near-greys.
- * Fonts (Inter, Space Grotesk, specimen fonts) are loaded in public/index.html.
+ * ค่าสไตล์กลางของเว็บ: สี ฟอนต์ มุมโค้ง เงา และความเร็วการเปลี่ยนสี
+ * ใช้ขาวดำเป็นหลัก และสีม่วงสำหรับเน้นบางจุด
+ * โหลดฟอนต์ใน public/index.html
  */
 :root {
-  /* Surfaces */
+  /* สีพื้นหลังและเส้นขอบ */
   --color-bg: #ffffff;
-  --color-surface: #fafafa;         /* cards, panels, header */
-  --color-surface-muted: #f4f4f5;   /* chips, hover fills, image wells */
+  --color-surface: #fafafa;         /* card กล่องผลลัพธ์ และแถบหัวเว็บ */
+  --color-surface-muted: #f4f4f5;   /* ป้าย พื้นหลังเมื่อวางเมาส์ และกล่องรูป */
   --color-border: #e4e4e7;
   --color-border-strong: #d4d4d8;
 
-  /* Text */
+  /* สีข้อความ */
   --color-text-primary: #111111;
   --color-text-secondary: #71717a;
-  --color-text-muted: #a1a1aa;      /* placeholders, icons, minor numbers */
+  --color-text-muted: #a1a1aa;      /* ข้อความตัวอย่าง ไอคอน และข้อมูลรอง */
 
-  /* Accent — black, used for primary interactive states */
+  /* สีหลักสำหรับปุ่มและจุดที่โต้ตอบได้ */
   --color-accent: #111111;
-  --color-accent-contrast: #ffffff; /* text on top of the accent */
+  --color-accent-contrast: #ffffff; /* ข้อความบนพื้นหลังสีหลัก */
 
-  /* Secondary — indigo, used sparingly */
+  /* สีรองสำหรับเน้นบางจุด */
   --color-secondary: #6366f1;
   --color-secondary-strong: #4f46e5;
   --color-secondary-soft: #eef2ff;
   --color-secondary-tint: rgba(99, 102, 241, 0.04);
 
-  /* Status — text colours meet WCAG AA (>= 4.5:1) on their backgrounds */
-  --color-confidence-high: #15803d;   /* font & style confidence >= 70%, 5.0:1 on white */
-  --color-confidence-medium: #b45309; /* 40-69%, 5.0:1 on white */
-  --color-confidence-low: #71717a;    /* below 40%, 4.8:1 on white */
+  /* สีสถานะและระดับความมั่นใจ */
+  --color-confidence-high: #15803d;   /* ตั้งแต่ 70% */
+  --color-confidence-medium: #b45309; /* ตั้งแต่ 40% แต่น้อยกว่า 70% */
+  --color-confidence-low: #71717a;    /* น้อยกว่า 40% */
   --color-warning: #f59e0b;
-  --color-danger: #b91c1c;          /* 5.9:1 on --color-danger-soft */
+  --color-danger: #b91c1c;          /* ข้อความผิดพลาด */
   --color-danger-soft: #fef2f2;
   --color-danger-border: #fecaca;
-  --color-highlight: #e4ed3a;       /* OCR bounding box */
+  --color-highlight: #e4ed3a;       /* กรอบข้อความ OCR */
 
-  /* Typography */
+  /* ฟอนต์ของหน้าเว็บ */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-family-display: 'Space Grotesk', var(--font-family);
 
-  /* Shape */
-  --radius-sm: 4px;    /* chips, tags */
-  --radius: 8px;       /* buttons, inputs */
-  --radius-lg: 12px;   /* cards */
-  --radius-xl: 16px;   /* page panels */
+  /* ความโค้งของมุม */
+  --radius-sm: 4px;    /* ป้ายขนาดเล็ก */
+  --radius: 8px;       /* ปุ่มและช่องกรอก */
+  --radius-lg: 12px;   /* card */
+  --radius-xl: 16px;   /* กล่องหลักของหน้า */
   --radius-pill: 999px;
 
-  /* Elevation */
+  /* เงาของกล่องและกรอบ focus */
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
   --shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
   --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.08);
   --focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.35);
 
-  /* Motion */
+  /* ระยะเวลาเปลี่ยนสไตล์ */
   --transition: 0.2s ease;
 }
 
@@ -73,7 +70,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* One consistent keyboard-focus style for every interactive element. */
+/* ใช้กรอบ focus แบบเดียวกัน เมื่อเลือกปุ่มหรือช่องกรอกด้วยแป้นพิมพ์ */
 :focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);

@@ -1,4 +1,5 @@
 import OcrImage from './OcrImage';
+import OcrStatus from './OcrStatus';
 import SpecimenText from './SpecimenText';
 import { MODEL_DISPLAY_NAMES } from '../constants/models';
 import ConfidenceValue from './ConfidenceValue';
@@ -31,6 +32,7 @@ function ResultsPanel({
       <div className="results-content">
         <div className="left-panel">
           <OcrImage src={uploadedImage} bbox={ocrResult?.item?.bbox} />
+          <OcrStatus result={ocrResult} />
         </div>
 
         <div className="right-panel">
@@ -45,8 +47,7 @@ function ResultsPanel({
             </div>
           ) : results && results.length > 0 ? (
             <>
-              {/* The model predicts one style for the whole image (every
-                  prediction carries the same value), so show it once. */}
+              {/* โมเดลทำนายรูปแบบตัวอักษรหนึ่งแบบต่อภาพ จึงแสดงเพียงครั้งเดียว */}
               {results[0].style && (
                 <div className="font-style-info results-style">
                   <span className="style-label">Style:</span>

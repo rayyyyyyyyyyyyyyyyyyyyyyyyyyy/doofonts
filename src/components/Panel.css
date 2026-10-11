@@ -1,4 +1,4 @@
-/* Shared by ResultsPanel and CompareResultsPanel */
+/* สไตล์ที่ใช้ร่วมกันในหน้าโมเดลเดียวและหน้าเปรียบเทียบ */
 
 /* กล่องหลักของหน้าผลลัพธ์ (padding กำหนดในแต่ละ panel) */
 .panel {
@@ -90,7 +90,7 @@
   margin: 0.5rem 0;
 }
 
-/* Font & style confidence %, coloured by level (see ConfidenceValue.js) */
+/* สีค่าความมั่นใจของฟอนต์และรูปแบบตัวอักษร ใช้กับ ConfidenceValue.js */
 .confidence--high {
   color: var(--color-confidence-high);
 }
@@ -103,7 +103,7 @@
   color: var(--color-confidence-low);
 }
 
-/* Processing time */
+/* เวลาประมวลผล */
 .timing-label {
   color: var(--color-text-secondary);
   font-weight: 400;
