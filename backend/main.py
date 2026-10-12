@@ -10,6 +10,7 @@ main.py — API สำหรับอ่าน OCR และทำนายฟ�
 
 import asyncio
 import json
+import math
 import threading
 import time
 from pathlib import Path
@@ -57,7 +58,7 @@ def bbox_area(bbox: list[list[float]]) -> float:
 def run_ocr(image: Image.Image) -> dict:
     """
     เลือกข้อความจากกรอบที่มีพื้นที่ใหญ่ที่สุด ถ้าพื้นที่เท่ากันเลือกค่าความมั่นใจสูงกว่า
-    คืน text, item (ข้อความ ความมั่นใจ และพิกัดกรอบ) และ status
+    คืน text, item (ข้อความ ความมั่นใจ และพิกัดกรอบ), crop_box (ซ้าย บน ขวา ล่าง) และ status
     status แยกเป็น success, no_text หรือ error โดยไม่ตัดข้อความที่อ่านได้
     """
     try:
@@ -67,17 +68,28 @@ def run_ocr(image: Image.Image) -> dict:
             ocr_items = _run_ocr_unlocked(image)
     except Exception as exc:
         print(f"  OCR error: {exc}")
-        return {"text": "", "item": None, "status": "error"}
+        return {"text": "", "item": None, "crop_box": None, "status": "error"}
 
     largest = max(
         ocr_items,
         key=lambda item: (bbox_area(item["bbox"]), item["confidence"]),
         default=None,
     )
+    if largest is None:
+        return {"text": "", "item": None, "crop_box": None, "status": "no_text"}
+
+    # กรอบที่เลือกใช้พิกัดภาพต้นฉบับแล้ว เตรียม crop_box สำหรับโมเดลฟอนต์
+    # ปัดขอบออกเพื่อไม่ตัดตัวอักษร และจำกัดขอบให้ไม่เกินภาพต้นฉบับ
+    box = largest["bbox"]
+    x_min = max(0, math.floor(min(x for x, y in box)))
+    x_max = min(image.width, math.ceil(max(x for x, y in box)))
+    y_min = max(0, math.floor(min(y for x, y in box)))
+    y_max = min(image.height, math.ceil(max(y for x, y in box)))
     return {
-        "text": largest["text"] if largest else "",
+        "text": largest["text"],
         "item": largest,
-        "status": "success" if largest else "no_text",
+        "crop_box": [x_min, y_min, x_max, y_max],
+        "status": "success",
     }
 
 
@@ -122,13 +134,15 @@ def _run_ocr_unlocked(image: Image.Image) -> list[dict]:
 
                 # 4. ถ้าไม่มีภาษาไทย ให้ตัดเฉพาะส่วนในกรอบมาอ่านอังกฤษซ้ำ
                 if not has_thai and ocr_reader_en is not None:
-                    x_min = max(0, int(min(pt[0] for pt in box)))
-                    x_max = min(img_rgb.width, int(max(pt[0] for pt in box)))
-                    y_min = max(0, int(min(pt[1] for pt in box)))
-                    y_max = min(img_rgb.height, int(max(pt[1] for pt in box)))
+                    # พิกัดบน img_rgb ที่อาจขยายแล้ว ใช้เฉพาะอ่านอังกฤษซ้ำ
+                    # ยังไม่ใช่ crop_box บนภาพต้นฉบับสำหรับโมเดลฟอนต์
+                    ocr_x_min = max(0, int(min(pt[0] for pt in box)))
+                    ocr_x_max = min(img_rgb.width, int(max(pt[0] for pt in box)))
+                    ocr_y_min = max(0, int(min(pt[1] for pt in box)))
+                    ocr_y_max = min(img_rgb.height, int(max(pt[1] for pt in box)))
 
-                    if x_max > x_min and y_max > y_min:
-                        crop = img_rgb.crop((x_min, y_min, x_max, y_max))
+                    if ocr_x_max > ocr_x_min and ocr_y_max > ocr_y_min:
+                        crop = img_rgb.crop((ocr_x_min, ocr_y_min, ocr_x_max, ocr_y_max))
                         # แยกกรอบคำ เพื่อไม่ให้รวมเศษตัวอักษรจากคำข้างเคียง
                         en_res = ocr_reader_en.readtext(np.array(crop), detail=1, width_ths=0.0)
                         # ใช้ผลอังกฤษแทนรอบแรก เฉพาะเมื่อมีข้อความที่ไม่ว่าง
@@ -142,8 +156,8 @@ def _run_ocr_unlocked(image: Image.Image) -> list[dict]:
                                     "confidence": round(float(en_confidence) * 100, 1),
                                     "bbox": [
                                         [
-                                            (float(x) + x_min) / scale_factor,
-                                            (float(y) + y_min) / scale_factor,
+                                            (float(x) + ocr_x_min) / scale_factor,
+                                            (float(y) + ocr_y_min) / scale_factor,
                                         ]
                                         for x, y in en_box
                                     ],
@@ -162,6 +176,22 @@ def _run_ocr_unlocked(image: Image.Image) -> list[dict]:
             raise RuntimeError("OCR recognition failed") from e
 
     return ocr_items
+
+
+def crop_for_prediction(image: Image.Image, ocr: dict) -> Image.Image:
+    """ตัดภาพต้นฉบับตามกรอบ OCR ที่เลือก เพื่อส่งเข้าโมเดลฟอนต์"""
+    if ocr.get("status") == "error":
+        raise HTTPException(status_code=503, detail="OCR failed. Please try again before predicting the font.")
+    crop_box = ocr.get("crop_box")
+    if not crop_box:
+        raise HTTPException(status_code=422, detail="No readable text found. Please try another image.")
+
+    # รับพิกัดภาพต้นฉบับจาก run_ocr() ตามลำดับ ซ้าย บน ขวา ล่าง
+    # ตรวจว่ากรอบมีพื้นที่ก่อนตัดภาพ โดยไม่คำนวณพิกัดซ้ำ
+    x_min, y_min, x_max, y_max = crop_box
+    if x_max <= x_min or y_max <= y_min:
+        raise HTTPException(status_code=422, detail="Invalid detected text area. Please try another image.")
+    return image.crop(tuple(crop_box))
 
 
 async def read_upload_image(file: UploadFile) -> Image.Image:
@@ -297,7 +327,11 @@ async def predict_all(
     # อ่าน OCR ให้เสร็จก่อน เพื่อไม่ให้รบกวนการวัดเวลาทำนายโมเดล
     ocr_start = time.time()
     ocr = await asyncio.to_thread(run_ocr, image)
+
     ocr_time_ms = round((time.time() - ocr_start) * 1000, 1)
+
+    # ตัดกรอบที่ใหญ่ที่สุดครั้งเดียว และใช้ภาพเดียวกันกับทุกโมเดล
+    model_image = crop_for_prediction(image, ocr)
 
     # ทำนายทีละโมเดล เพื่อไม่ให้โมเดลในคำขอเดียวกันแย่งกำลังประมวลผล
     def run_models_sequentially() -> dict:
@@ -305,7 +339,7 @@ async def predict_all(
         # ลองทุกโมเดล เพื่อให้หน้าเว็บแสดงข้อผิดพลาดของโมเดลที่ไม่มีไฟล์ด้วย
         for model_id in model_manager.all_models:
             try:
-                result = model_manager.get_predictor(model_id).predict(image, top_k)
+                result = model_manager.get_predictor(model_id).predict(model_image, top_k)
             except Exception as e:
                 result = {"error": str(e), "predictions": [], "inference_time_ms": 0}
             results[model_id] = result
@@ -349,6 +383,9 @@ async def predict(
     ocr = await asyncio.to_thread(run_ocr, image)
     ocr_time_ms = round((time.time() - ocr_start) * 1000, 1)
 
+    # ตัดจากภาพต้นฉบับตามกรอบ OCR ก่อนส่งเข้าโมเดล
+    model_image = crop_for_prediction(image, ocr)
+
     # ใช้โมเดลที่โหลดไว้แล้ว หรือโหลดใหม่ถ้ายังไม่มี
     try:
         predictor = await asyncio.to_thread(model_manager.get_predictor, model)
@@ -358,7 +395,7 @@ async def predict(
         raise HTTPException(status_code=404, detail=str(e))
 
     try:
-        result = await asyncio.to_thread(predictor.predict, image, top_k)
+        result = await asyncio.to_thread(predictor.predict, model_image, top_k)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Inference error: {str(e)}")
 

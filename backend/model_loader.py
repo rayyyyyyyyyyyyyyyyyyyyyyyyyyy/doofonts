@@ -1,7 +1,6 @@
 """
 model_loader.py — เตรียมภาพ โหลดโมเดล และทำนายฟอนต์กับรูปแบบตัวอักษร
 
-ย้ายมาจาก Choopan_Train_Template.ipynb เพื่อให้ FastAPI เรียกใช้โมเดลที่ฝึกแล้ว
 """
 
 import threading
