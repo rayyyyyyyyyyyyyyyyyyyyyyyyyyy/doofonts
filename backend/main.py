@@ -66,7 +66,20 @@ def run_ocr(image: Image.Image) -> dict:
     Thai word segmentation and the project avoids an extra dependency for it.
     """
     with ocr_lock:
-        return _run_ocr_unlocked(image)
+        if ocr_reader_th is None:
+            raise HTTPException(
+                status_code=503,
+                detail="OCR is not ready. Please try again.",
+            )
+        result = _run_ocr_unlocked(image)
+
+    # ไม่พบข้อความ: หยุดคำขอก่อนส่งภาพเข้าโมเดลจำแนกฟอนต์
+    if not result["candidates"]:
+        raise HTTPException(
+            status_code=422,
+            detail="No readable text found. Please upload another image.",
+        )
+    return result
 
 
 def _run_ocr_unlocked(image: Image.Image) -> dict:
@@ -146,7 +159,11 @@ def _run_ocr_unlocked(image: Image.Image) -> dict:
                 })
 
         except Exception as e:
-            print(f"  OCR warning: {e}")
+            print(f"  OCR error: {e}")
+            raise HTTPException(
+                status_code=503,
+                detail="OCR failed. Please try again.",
+            ) from e
 
     return {"candidates": ocr_items}
 
