@@ -23,7 +23,7 @@ class LetterboxResize:
 
     def __call__(self, img: Image.Image) -> Image.Image:
         img_copy = img.copy()
-        img_copy.thumbnail(self.target_size, Image.Resampling.LANCZOS)
+        img_copy.thumbnail(self.target_size, Image.Resampling.BILINEAR)
 
         padded_img = Image.new("RGB", self.target_size, self.fill_color)
         paste_x = (self.target_size[0] - img_copy.width) // 2
