@@ -14,7 +14,7 @@ from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
-# ย่อภาพโดยคงสัดส่วน แล้วเติมพื้นที่ว่างให้ครบ 224 × 224
+# ย่อหรือขยายภาพโดยคงสัดส่วน แล้วเติมพื้นที่ว่างให้ครบ 224 × 224
 # ---------------------------------------------------------------------------
 class LetterboxResize:
     def __init__(self, target_size=(224, 224), fill_color=(255, 255, 255)):
@@ -23,7 +23,14 @@ class LetterboxResize:
 
     def __call__(self, img: Image.Image) -> Image.Image:
         img_copy = img.copy()
-        img_copy.thumbnail(self.target_size, Image.Resampling.BILINEAR)
+        target_w, target_h = self.target_size
+        if img_copy.width < target_w and img_copy.height < target_h:
+            # ภาพเล็กกว่า 224 ทั้งสองด้าน: ขยายจนด้านที่ยาวกว่าเท่ากับ 224
+            scale = min(target_w / img_copy.width, target_h / img_copy.height)
+            new_size = (max(1, round(img_copy.width * scale)), max(1, round(img_copy.height * scale)))
+            img_copy = img_copy.resize(new_size, Image.Resampling.LANCZOS)
+        else:
+            img_copy.thumbnail(self.target_size, Image.Resampling.BILINEAR)
 
         padded_img = Image.new("RGB", self.target_size, self.fill_color)
         paste_x = (self.target_size[0] - img_copy.width) // 2
