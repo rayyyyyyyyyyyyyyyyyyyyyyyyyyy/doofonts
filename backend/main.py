@@ -45,9 +45,6 @@ ocr_reader_en: easyocr.Reader | None = None
 # ให้คำขอรอใช้ OCR ทีละคำขอ เพื่อไม่ให้ใช้ตัวอ่านเดียวกันพร้อมกัน
 ocr_lock = threading.Lock()
 
-# ขยายภาพที่สูงน้อยกว่า 400 px เพื่อช่วยให้ OCR อ่านสระและวรรณยุกต์ไทย
-OCR_TARGET_HEIGHT = 400
-
 
 def bbox_area(bbox: list[list[float]]) -> float:
     """คำนวณพื้นที่จากมุมของกรอบ OCR รองรับกรอบที่เอียงด้วย"""
@@ -98,13 +95,8 @@ def _run_ocr_unlocked(image: Image.Image) -> list[dict]:
     ocr_items: list[dict] = []
     if ocr_reader_th is not None:
         try:
-            # 1. เตรียมภาพสี ขยายภาพเล็ก และเพิ่มความต่างของสีเล็กน้อย
+            # 1. แปลงเป็นภาพสี และเพิ่มความต่างของสีเล็กน้อย
             img_rgb = image.convert("RGB")
-            scale_factor = 1.0
-            if img_rgb.height < OCR_TARGET_HEIGHT:
-                scale_factor = OCR_TARGET_HEIGHT / img_rgb.height
-                new_size = (int(img_rgb.width * scale_factor), int(img_rgb.height * scale_factor))
-                img_rgb = img_rgb.resize(new_size, Image.Resampling.LANCZOS)
             enhancer = ImageEnhance.Contrast(img_rgb)
             img_rgb = enhancer.enhance(1.05)
 
@@ -134,8 +126,7 @@ def _run_ocr_unlocked(image: Image.Image) -> list[dict]:
 
                 # 4. ถ้าไม่มีภาษาไทย ให้ตัดเฉพาะส่วนในกรอบมาอ่านอังกฤษซ้ำ
                 if not has_thai and ocr_reader_en is not None:
-                    # พิกัดบน img_rgb ที่อาจขยายแล้ว ใช้เฉพาะอ่านอังกฤษซ้ำ
-                    # ยังไม่ใช่ crop_box บนภาพต้นฉบับสำหรับโมเดลฟอนต์
+                    # ตัดเฉพาะส่วนมาอ่านอังกฤษซ้ำ
                     ocr_x_min = max(0, int(min(pt[0] for pt in box)))
                     ocr_x_max = min(img_rgb.width, int(max(pt[0] for pt in box)))
                     ocr_y_min = max(0, int(min(pt[1] for pt in box)))
@@ -148,7 +139,7 @@ def _run_ocr_unlocked(image: Image.Image) -> list[dict]:
                         # ใช้ผลอังกฤษแทนรอบแรก เฉพาะเมื่อมีข้อความที่ไม่ว่าง
                         en_res = [result for result in en_res if result[1].strip()]
                         if en_res:
-                            # บวกตำแหน่งที่ตัดภาพ แล้วหารอัตราขยาย เพื่อคืนตำแหน่งบนภาพต้นฉบับ
+                            # บวกตำแหน่งที่ตัดภาพ เพื่อคืนพิกัดบนภาพต้นฉบับ
                             for en_box, en_text, en_confidence in en_res:
                                 en_text = en_text.strip()
                                 ocr_items.append({
@@ -156,8 +147,8 @@ def _run_ocr_unlocked(image: Image.Image) -> list[dict]:
                                     "confidence": round(float(en_confidence) * 100, 1),
                                     "bbox": [
                                         [
-                                            (float(x) + ocr_x_min) / scale_factor,
-                                            (float(y) + ocr_y_min) / scale_factor,
+                                            float(x) + ocr_x_min,
+                                            float(y) + ocr_y_min,
                                         ]
                                         for x, y in en_box
                                     ],
@@ -169,7 +160,7 @@ def _run_ocr_unlocked(image: Image.Image) -> list[dict]:
                 ocr_items.append({
                     "text": cleaned_text,
                     "confidence": round(float(confidence) * 100, 1),
-                    "bbox": [[float(x) / scale_factor, float(y) / scale_factor] for x, y in box],
+                    "bbox": [[float(x), float(y)] for x, y in box],
                 })
 
         except Exception as e:
